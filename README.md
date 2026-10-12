@@ -354,10 +354,10 @@ These checks should be marked as completed only after the corresponding tests ha
 
 ## 15. Team Contributions
 
-- **Student 1:** AWS Cloud and Data Pipeline.
-- **Student 2:** Data Cleaning and Exploratory Data Analysis.
-- **Student 3:** Machine Learning and Model Evaluation.
-- **Student 4:** SQL Analytics, Business Insights, and Integration.
+- **Sandeepa:** AWS Cloud and Data Pipeline.
+- **Pasindi:** Data Cleaning and Exploratory Data Analysis.
+- **Avindu:** Machine Learning and Model Evaluation.
+- **Uvindu 4:** SQL Analytics, Business Insights, and Integration.
 
 Each student should contribute their source code, results, and documentation to the shared repository.
 
