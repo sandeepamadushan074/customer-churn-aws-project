@@ -1,0 +1,7 @@
+Metric,Score
+Accuracy,0.7579843860894251
+Churn Precision,0.5313092979127134
+Churn Recall,0.7486631016042781
+Churn F1-score,0.6215316315205327
+Best Cross-Validation F1-score,0.6300971384611708
+Selected Threshold,0.55

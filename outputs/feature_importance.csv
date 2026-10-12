@@ -1,0 +1,48 @@
+Feature,Importance
+num__tenure,0.1096358496269665
+cat__Contract_Month-to-month,0.10135102103025573
+num__TotalCharges,0.09262389030379975
+num__MonthlyCharges,0.07137216606880847
+cat__OnlineSecurity_No,0.057987510846020635
+cat__TechSupport_No,0.05076158801162076
+cat__InternetService_Fiber optic,0.04849796347634568
+cat__Contract_Two year,0.04809250558421616
+cat__TenureGroup_0-12 Months,0.038692498869602736
+cat__PaymentMethod_Electronic check,0.032407385681206845
+cat__TenureGroup_49-72 Months,0.021626222114124617
+cat__OnlineBackup_No,0.020010017798678198
+cat__InternetService_DSL,0.019396316936723317
+cat__Contract_One year,0.018324919796896395
+cat__TechSupport_No internet service,0.015455705856225245
+cat__OnlineSecurity_Yes,0.015202592676417806
+cat__PaperlessBilling_Yes,0.011846452851470573
+cat__PaperlessBilling_No,0.011746189623686874
+cat__TechSupport_Yes,0.01084015975703866
+cat__OnlineSecurity_No internet service,0.010736133283045193
+cat__OnlineBackup_No internet service,0.009359334610023548
+cat__OnlineBackup_Yes,0.009276521417080963
+cat__DeviceProtection_No,0.008779447124684259
+cat__InternetService_No,0.008613507556312862
+cat__StreamingMovies_No internet service,0.008516177409629793
+cat__Partner_Yes,0.008407769126845701
+cat__StreamingMovies_Yes,0.008337083559414803
+cat__Dependents_No,0.008280940822287728
+cat__Partner_No,0.00816800293151531
+cat__MultipleLines_Yes,0.008099356477318026
+cat__PaymentMethod_Bank transfer (automatic),0.00795705138376503
+cat__StreamingTV_No,0.007952372158819141
+cat__TenureGroup_25-48 Months,0.007803315643896334
+cat__MultipleLines_No,0.0077946363685509595
+cat__StreamingMovies_No,0.007755745653490582
+cat__Dependents_Yes,0.007613762133869835
+cat__StreamingTV_Yes,0.007590145313505201
+num__SeniorCitizen,0.007476514030171289
+cat__StreamingTV_No internet service,0.007132619464034386
+cat__PaymentMethod_Credit card (automatic),0.0071320092603945435
+cat__DeviceProtection_Yes,0.0062016444104960695
+cat__TenureGroup_13-24 Months,0.006166972129586983
+cat__PaymentMethod_Mailed check,0.005888007882038766
+cat__DeviceProtection_No internet service,0.00432499422210877
+cat__PhoneService_No,0.0030974975420784657
+cat__MultipleLines_No phone service,0.003001800800155859
+cat__PhoneService_Yes,0.0026656803747744868
