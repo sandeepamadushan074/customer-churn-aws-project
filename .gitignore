@@ -38,7 +38,7 @@ Thumbs.db
 *.swp
 
 # Local dataset
-data/
+# data/
 
 # Generated model and output files
 outputs/*.joblib
