@@ -1,7 +1,7 @@
-
 import pandas as pd
 from pathlib import Path
 import joblib
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.preprocessing import OneHotEncoder
@@ -13,6 +13,7 @@ from sklearn.metrics import (
     accuracy_score,
     classification_report,
     confusion_matrix,
+    ConfusionMatrixDisplay,
     precision_score,
     recall_score,
     f1_score
@@ -21,19 +22,28 @@ from sklearn.metrics import (
 from src.data_cleaning import load_and_clean_data
 
 
+# Set output paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = BASE_DIR / "outputs"
+FIGURES_DIR = OUTPUT_DIR / "figures"
+
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+
 
 # Load dataset
 df = load_and_clean_data()
 
 # Separate features and target
-X = df.drop(columns=["customerID", "Churn", "gender"], errors="ignore")
+X = df.drop(
+    columns=["customerID", "Churn", "gender"],
+    errors="ignore"
+)
 y = df["Churn"].map({"No": 0, "Yes": 1})
 
 if y.isna().any():
     raise ValueError("Churn contains missing or unexpected values.")
+
 
 # Split dataset
 X_train, X_test, y_train, y_test = train_test_split(
@@ -47,6 +57,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 print("\nTraining Shape:", X_train.shape)
 print("Testing Shape:", X_test.shape)
 
+
 # Identify columns
 categorical_cols = X_train.select_dtypes(
     include=["object", "category", "str"]
@@ -56,7 +67,8 @@ numerical_cols = X_train.select_dtypes(
     include=["number"]
 ).columns.tolist()
 
-# Preprocessing
+
+# Prepare preprocessing
 numerical_transformer = SimpleImputer(strategy="median")
 
 categorical_transformer = Pipeline(
@@ -73,7 +85,8 @@ preprocessor = ColumnTransformer(
     ]
 )
 
-# Logistic Regression pipeline
+
+# Build Logistic Regression pipeline
 pipeline = Pipeline(
     steps=[
         ("preprocessor", preprocessor),
@@ -84,13 +97,16 @@ pipeline = Pipeline(
     ]
 )
 
-# Hyperparameter tuning
+
+# Set hyperparameter options
 param_grid = {
     "model__C": [0.01, 0.1, 1, 10, 100],
     "model__solver": ["liblinear", "lbfgs"],
     "model__class_weight": [None, "balanced"]
 }
 
+
+# Find the best model
 random_search = RandomizedSearchCV(
     estimator=pipeline,
     param_distributions=param_grid,
@@ -113,8 +129,10 @@ print(random_search.best_params_)
 print("\nBest Cross-Validation F1-score:")
 print(round(random_search.best_score_, 4))
 
-# Predict probabilities
+
+# Predict churn probabilities
 y_prob = best_model.predict_proba(X_test)[:, 1]
+
 
 # Compare thresholds
 thresholds = [0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60]
@@ -137,6 +155,7 @@ for threshold in thresholds:
     })
 
 threshold_df = pd.DataFrame(threshold_results)
+
 best_result = threshold_df.loc[
     threshold_df["F1-score"].idxmax()
 ]
@@ -146,7 +165,8 @@ print("\nThreshold Comparison:")
 print(threshold_df.to_string(index=False))
 print("\nSelected Threshold:", best_threshold)
 
-# Final evaluation
+
+# Evaluate the final model
 y_pred = (y_prob >= best_threshold).astype(int)
 
 accuracy = accuracy_score(y_test, y_pred)
@@ -169,10 +189,42 @@ print(classification_report(
     zero_division=0
 ))
 
-print("\nConfusion Matrix:")
-print(confusion_matrix(y_test, y_pred, labels=[0, 1]))
 
-# Save metrics separately for this model
+# Create and save confusion matrix
+cm = confusion_matrix(y_test, y_pred, labels=[0, 1])
+
+print("\nConfusion Matrix:")
+print(cm)
+
+fig, ax = plt.subplots(figsize=(7, 5))
+
+ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=["No Churn", "Churn"]
+).plot(
+    ax=ax,
+    cmap="Blues",
+    values_format="d"
+)
+
+ax.set_title("Logistic Regression - Confusion Matrix")
+fig.tight_layout()
+
+confusion_matrix_path = (
+    FIGURES_DIR / "logistic_regression_confusion_matrix.png"
+)
+
+fig.savefig(
+    confusion_matrix_path,
+    dpi=300,
+    bbox_inches="tight"
+)
+plt.close(fig)
+
+print("\nConfusion matrix saved:", confusion_matrix_path)
+
+
+# Save evaluation results
 metrics_df = pd.DataFrame({
     "Metric": [
         "Accuracy",
@@ -202,7 +254,8 @@ threshold_df.to_csv(
     index=False
 )
 
-# Save the trained model and threshold
+
+# Save trained model
 joblib.dump(
     {
         "model": best_model,
@@ -211,5 +264,5 @@ joblib.dump(
     OUTPUT_DIR / "customer_churn_logistic_regression.joblib"
 )
 
-print("\nLogistic Regression model and output files saved.")
+print("\nLogistic Regression training completed.")
 print("Output Folder:", OUTPUT_DIR)
