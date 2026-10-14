@@ -16,6 +16,8 @@ This group project includes:
 - SQL analytics using Amazon Athena.
 - Business insights and recommendations.
 - GitHub collaboration and project documentation.
+- AWS-based customer churn prediction using a trained Random Forest model.
+- An API endpoint for submitting customer details and receiving predictions.
 
 ## 2. Dataset
 
@@ -79,7 +81,7 @@ customer-churn-aws-project/
 └── .gitignore
 ```
 
-This structure describes the expected project organization. All listed files should be verified in the repository before final submission.
+This structure describes the expected project organization. All listed files should be verified in the repository before final submission. The deployed model and AWS configuration are also maintained in AWS.
 
 ## 4. Technologies Used
 
@@ -90,15 +92,29 @@ This structure describes the expected project organization. All listed files sho
 - Google Colab
 - Amazon S3
 - AWS Lambda
+- Amazon API Gateway
 - Amazon CloudWatch
 - Amazon Athena
+- AWS IAM
 - Git and GitHub
 
-## 5. AWS Data Pipeline
+## 5. AWS Data Pipeline and Prediction Service
 
-The project uses Amazon S3 and AWS Lambda to process the customer churn dataset.
+The project uses Amazon S3 and AWS Lambda to process customer data and generate churn predictions. Amazon API Gateway provides an HTTP endpoint for prediction requests, while Amazon CloudWatch supports monitoring and troubleshooting.
 
-The intended workflow is:
+### 5.1 AWS Resources
+
+| AWS Resource | Configuration |
+|---|---|
+| AWS Region | `eu-north-1` |
+| S3 Bucket | `customer-churn-student-2026-susl` |
+| Lambda Function | `customer-churn-predictor` |
+| API Gateway | `customer-churn-predictor-API` |
+| Trained Random Forest model | `outputs/customer_churn_random_forest.joblib` |
+
+### 5.2 Data Processing Workflow
+
+The original data-processing workflow is intended to use Amazon S3 and AWS Lambda.
 
 1. Upload the original CSV file to the S3 `raw/` folder.
 2. An S3 Object Created event triggers the configured Lambda function.
@@ -109,9 +125,79 @@ The intended workflow is:
 7. The agreed processed dataset is used for EDA, machine learning, and SQL analysis.
 8. Important outputs and screenshots are stored in the GitHub repository.
 
-The S3 event notification should monitor only the intended raw CSV files. This helps avoid repeatedly triggering Lambda when it writes the processed output.
+The raw-to-processed workflow must be configured and verified separately from the prediction workflow described below. The S3 event notification should monitor only the intended input files to avoid repeated invocations when Lambda writes output files.
 
-The pipeline should also be tested with repeated uploads to verify how the fixed output filename behaves.
+### 5.3 S3 Batch Prediction Workflow
+
+The deployed prediction service supports batch predictions from customer CSV files.
+
+1. Upload a customer CSV file to the S3 `incoming/` folder.
+2. The configured S3 Object Created event triggers the `customer-churn-predictor` Lambda function for CSV uploads.
+3. Lambda reads the uploaded CSV file.
+4. Lambda loads the trained Random Forest model from S3.
+5. The model predicts customer churn for the input records.
+6. Lambda saves the prediction results as a CSV file under `outputs/predictions/`.
+7. CloudWatch Logs can be inspected for execution messages and errors.
+
+**Example input:**
+
+`incoming/customer_churn_test_data.csv`
+
+**Example output:**
+
+`outputs/predictions/customer_churn_test_data_predictions.csv`
+
+The batch prediction workflow has been tested successfully, and a prediction CSV was generated in the S3 output folder.
+
+The output filename is based on the input filename, with `_predictions.csv` appended before the file extension.
+
+Repeated uploads and fixed-filename output behaviour should be tested to ensure the pipeline behaves as expected.
+
+### 5.4 API-Based Prediction Workflow
+
+Amazon API Gateway exposes the Lambda prediction function through an HTTP endpoint.
+
+The workflow is:
+
+1. A client sends customer details as a JSON POST request.
+2. API Gateway forwards the request to the `customer-churn-predictor` Lambda function.
+3. Lambda processes the customer details and loads the trained model from S3 when required.
+4. The model predicts the customer's churn status.
+5. Lambda returns the prediction result as JSON.
+
+**API Endpoint:**
+
+`https://ueu30rw8tl.execute-api.eu-north-1.amazonaws.com/default/customer-churn-predictor`
+
+**HTTP Method:** `POST`
+
+**Content-Type:** `application/json`
+
+The API endpoint was tested successfully using PowerShell.
+
+Example response from a successful test:
+
+```json
+{
+  "churn_prediction": "No",
+  "churn_probability": 0.4026,
+  "threshold": 0.5
+}
+```
+
+This result represents one particular test request. The model predicted `No` because the churn probability was below the classification threshold of `0.5`.
+
+The prediction is an estimate based on the trained model and does not guarantee the customer's future behaviour.
+
+### 5.5 Monitoring and Permissions
+
+- AWS Lambda uses an IAM execution role to access the required AWS resources.
+- Amazon CloudWatch Logs provides Lambda execution logs for monitoring and troubleshooting.
+- The S3 event notification must be configured for the intended input files.
+- API Gateway must have permission to invoke the Lambda function.
+- S3 permissions must allow the function to read the model and input files and write prediction outputs.
+
+The configured IAM permissions should follow the principle of least privilege.
 
 ## 6. Data Validation and Cleaning
 
@@ -129,6 +215,8 @@ The validation and cleaning process should consider:
 The Lambda cleaning process and notebook preprocessing should follow agreed rules. Any differences, such as missing-value handling, duplicate removal, or data type conversion, should be documented.
 
 The processed dataset should be checked for consistent row counts and column names before being used by other team members.
+
+The prediction Lambda function also expects the input CSV or JSON fields to match the format required by the deployed model.
 
 ## 7. Exploratory Data Analysis (EDA)
 
@@ -149,7 +237,7 @@ Student 3 is responsible for developing and evaluating Logistic Regression and R
 
 The models should use a consistent dataset split and appropriate evaluation methods.
 
-### Random Forest Evaluation
+### 8.1 Random Forest Evaluation
 
 The recorded Random Forest evaluation results are:
 
@@ -161,7 +249,7 @@ The recorded Random Forest evaluation results are:
 | F1-score | 0.6312 |
 | Cross-validation F1-score | 0.6362 |
 
-The recorded classification threshold is 0.50.
+The recorded classification threshold is `0.50`.
 
 The recorded confusion matrix is:
 
@@ -179,13 +267,38 @@ The recorded important Random Forest features include:
 
 The exact feature importance values should be taken from the generated model output.
 
-### Logistic Regression Evaluation
+The recorded metrics should be reproduced using the saved training code and agreed dataset before final submission.
+
+### 8.2 Logistic Regression Evaluation
 
 The Logistic Regression model must also be evaluated using the actual model output.
 
 Its accuracy, precision, recall, F1-score, and other required metrics should be documented from the generated evaluation results. Values should not be estimated or invented.
 
 The team should verify that both model evaluations use the agreed dataset and document any differences in preprocessing.
+
+### 8.3 Model Deployment and Prediction
+
+The trained Random Forest model is stored in Amazon S3 and used by AWS Lambda for customer churn prediction.
+
+The deployed model expects the feature columns used during model training. The input data must follow the same preprocessing and feature-format requirements.
+
+The Lambda prediction logic derives the `TenureGroup` feature from `tenure` using these ranges:
+
+- `0-12 Months`
+- `13-24 Months`
+- `25-48 Months`
+- `49-72 Months`
+
+The `customerID`, `Churn`, and `gender` columns are not model input features for this deployed Random Forest model.
+
+The prediction service returns:
+
+- `churn_prediction`: the predicted churn class.
+- `churn_probability`: the estimated churn probability.
+- `threshold`: the classification threshold used by the prediction logic.
+
+The deployed model and its preprocessing requirements must remain consistent with the model used during training.
 
 ## 9. SQL Analytics Using Amazon Athena
 
@@ -293,13 +406,76 @@ pip install -r requirements.txt
 3. Run all notebook cells from beginning to end.
 4. Check the generated charts and results.
 
-### Run the AWS Pipeline
+### Run the AWS Batch Prediction Pipeline
 
-1. Upload the original CSV to the configured S3 `raw/` folder.
-2. Confirm that the S3 event notification is configured correctly.
-3. Check the Lambda execution result.
-4. Inspect CloudWatch Logs for errors or processing messages.
-5. Verify that the processed CSV was created in the S3 `processed/` folder.
+1. Open Amazon S3 in the `eu-north-1` region.
+2. Upload a valid customer CSV file to `incoming/` in the `customer-churn-student-2026-susl` bucket.
+3. Confirm that the S3 event notification is configured for the intended CSV files.
+4. Check the `customer-churn-predictor` Lambda execution.
+5. Inspect CloudWatch Logs if troubleshooting is required.
+6. Verify that the prediction CSV was created under `outputs/predictions/`.
+
+### Test the Prediction API
+
+The API can be tested using PowerShell.
+
+Set the endpoint:
+
+```powershell
+$uri = "https://ueu30rw8tl.execute-api.eu-north-1.amazonaws.com/default/customer-churn-predictor"
+```
+
+Prepare customer details:
+
+```powershell
+$body = @{
+    SeniorCitizen = 0
+    Partner = "Yes"
+    Dependents = "No"
+    tenure = 12
+    PhoneService = "Yes"
+    MultipleLines = "No"
+    InternetService = "DSL"
+    OnlineSecurity = "No"
+    OnlineBackup = "Yes"
+    DeviceProtection = "No"
+    TechSupport = "No"
+    StreamingTV = "No"
+    StreamingMovies = "No"
+    Contract = "Month-to-month"
+    PaperlessBilling = "Yes"
+    PaymentMethod = "Electronic check"
+    MonthlyCharges = 70.5
+    TotalCharges = 850.0
+} | ConvertTo-Json
+```
+
+Send the POST request:
+
+```powershell
+try {
+    $response = Invoke-RestMethod `
+        -Uri $uri `
+        -Method POST `
+        -ContentType "application/json" `
+        -Body $body
+
+    Write-Host "`nAPI Response:" -ForegroundColor Green
+    $response | ConvertTo-Json -Depth 5
+}
+catch {
+    Write-Host "`nHTTP Request Failed:" -ForegroundColor Red
+
+    if ($_.ErrorDetails.Message) {
+        Write-Host $_.ErrorDetails.Message
+    }
+    else {
+        Write-Host $_.Exception.Message
+    }
+}
+```
+
+A successful response contains the prediction class, churn probability, and classification threshold. The result may differ when different customer details are submitted.
 
 ### Run SQL Analysis
 
@@ -319,12 +495,17 @@ The following checks are required before final submission:
 - Reproduce both machine learning model evaluations.
 - Execute all five SQL queries.
 - Verify that row counts and metrics are consistent.
-- Upload a new CSV through the AWS pipeline.
+- Upload a new CSV through the AWS batch prediction pipeline.
+- Verify that the prediction CSV is generated in S3.
 - Test repeated uploads and fixed-filename output behaviour.
+- Test the API with valid customer details.
+- Test API error handling with invalid input.
 - Inspect CloudWatch Logs.
 - Save relevant screenshots and evidence in `docs/demo_evidence/`.
 
-These checks should be marked as completed only after the corresponding tests have actually been performed.
+The S3 batch prediction workflow and API prediction endpoint have been tested successfully.
+
+Other checks should be marked as completed only after the corresponding tests have actually been performed.
 
 ## 13. Security and Cost Considerations
 
@@ -335,6 +516,9 @@ These checks should be marked as completed only after the corresponding tests ha
 - Use an IAM execution role for Lambda instead of hardcoding AWS credentials.
 - Review `.gitignore` before committing files.
 - Do not commit the `.venv/` directory or other unnecessary local environment files.
+- Restrict access to S3 input files, model files, and prediction outputs to authorized users.
+- Ensure that API Gateway has permission to invoke the intended Lambda function.
+- Avoid exposing sensitive customer information in public repositories or logs.
 
 ### Cost
 
@@ -343,14 +527,19 @@ These checks should be marked as completed only after the corresponding tests ha
 - Keep CloudWatch Logs and S3 storage within appropriate limits.
 - Run Athena queries only when required.
 - Remove unused resources after testing when appropriate.
+- Review the costs of AWS services before extending the project.
 
 ## 14. Limitations
 
 - The results depend on the quality and coverage of the available dataset.
 - The analysis identifies associations, not proven causes of customer churn.
 - Machine learning performance depends on data preprocessing, feature selection, and evaluation methods.
-- The pipeline must be tested with new and repeated uploads to confirm reliable behaviour.
+- The deployed prediction model requires input features in the expected format.
+- The prediction probability is a model estimate, not a guarantee of future customer behaviour.
+- The batch pipeline must be tested with new and repeated uploads to confirm reliable behaviour.
+- The API should be tested with invalid and incomplete input to verify error handling.
 - Reported metrics must be reproducible using the saved code and agreed dataset.
+- The original raw-to-processed data pipeline and the deployed prediction pipeline have different S3 prefixes and should be documented and verified separately.
 
 ## 15. Team Contributions
 
@@ -373,6 +562,8 @@ The final repository should include:
 - Technical report and demo evidence.
 - Business recommendations.
 - Tests, dependency requirements, and setup instructions.
+- Documentation for the S3 batch prediction workflow.
+- Documentation and test evidence for the API prediction endpoint.
 - This README file.
 
 Before submission, the team should verify that all required files exist and that the documented workflow and results match the actual project.
