@@ -546,7 +546,7 @@ Other checks should be marked as completed only after the corresponding tests ha
 - **Sandeepa:** AWS Cloud and Data Pipeline.
 - **Pasindi:** Data Cleaning and Exploratory Data Analysis.
 - **Avindu:** Machine Learning and Model Evaluation.
-- **Uvindu 4:** SQL Analytics, Business Insights, and Integration.
+- **Uvindu:** SQL Analytics, Business Insights, and Integration.
 
 Each student should contribute their source code, results, and documentation to the shared repository.
 
